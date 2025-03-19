@@ -20,7 +20,7 @@ export class UsersController {
   @HttpCode(HttpStatus.CREATED) // 201
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async createUser(@Body() createUserDto: CreateUserDto) {
-    const { name, email } = createUserDto;
+    const { name, email, password } = createUserDto;
 
     // check if email already exists
     const existingUser = await this.usersService.findByEmail(email);
@@ -29,7 +29,9 @@ export class UsersController {
       throw new BadRequestException('Email already exists');
     }
 
-    const user = await this.usersService.createUser(name, email);
+    const user = await this.usersService.createUser(name, email, password);
+
+    console.log(user);
 
     return {
       message: 'User created successfully',
