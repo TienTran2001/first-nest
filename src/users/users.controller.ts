@@ -1,13 +1,40 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './create-user.dto';
 
-@Controller('users')
+@Controller('users') //decorator
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  createUser(@Body() body: { name: string; email: string }) {
-    return this.usersService.createUser(body.name, body.email);
+  @HttpCode(HttpStatus.CREATED) // 201
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    const { name, email } = createUserDto;
+
+    // check if email already exists
+    const existingUser = await this.usersService.findByEmail(email);
+
+    if (existingUser) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    const user = await this.usersService.createUser(name, email);
+
+    return {
+      message: 'User created successfully',
+      data: user,
+    };
   }
 
   @Get()
