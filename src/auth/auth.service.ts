@@ -1,13 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 import { AuthRepository } from 'src/auth/auth.repository';
+import { TypeRegisterSchema } from 'src/auth/schemas/register.schema';
 
 @Injectable()
 export class AuthService {
   constructor(
     private authRepository: AuthRepository,
     private jwtService: JwtService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   /**
@@ -44,7 +48,11 @@ export class AuthService {
    * @param name
    * @return new user
    */
-  async register(email: string, password: string, name: string) {
+  async register(dto: TypeRegisterSchema) {
+    const { email, password, name, otp } = dto;
+
+    const cachedOtp = await this.cacheManager.keys(`otp:${email}`);
+
     const hashedPassword = await this.hashPassword(password);
 
     return this.authRepository.createUser({
@@ -52,6 +60,12 @@ export class AuthService {
       name,
       password: hashedPassword,
     });
+  }
+
+  async requestOtp(email: string) {
+    const otp = randomInt(100000, 999999).toString();
+    await this.cacheManager.set(`otp:${email}`, otp, { ttl: 300 });
+    console.log(`OTP cho ${email}: ${otp}`);
   }
 
   /**

@@ -1,3 +1,4 @@
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthRepository } from 'src/auth/auth.repository';
@@ -11,6 +12,10 @@ import { AuthService } from './auth.service';
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '15m' },
+    }),
+    CacheModule.register({
+      ttl: 300,
+      max: 100,
     }),
   ],
   controllers: [AuthController],

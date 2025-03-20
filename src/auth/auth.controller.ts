@@ -12,6 +12,12 @@ import {
 } from '@nestjs/common';
 import { loginResponseSchema } from 'src/auth/schemas/login-response';
 import { loginSchema, TypeLoginSchema } from 'src/auth/schemas/login.schema';
+import {
+  registerSchema,
+  requestOtpSchema,
+  TypeRegisterSchema,
+  TypeRequestOtpSchema,
+} from 'src/auth/schemas/register.schema';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
@@ -27,9 +33,22 @@ interface RequestWithUser extends Request {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @HttpCode(HttpStatus.CREATED)
+  @Post('otp/request')
+  async requestOtp(
+    @Body(new ZodValidationPipe(requestOtpSchema)) body: TypeRequestOtpSchema,
+  ) {
+    const { email } = body;
+    await this.authService.requestOtp(email);
+    return {
+      message: 'OTP requested successfully',
+    };
+  }
+
+  @HttpCode(HttpStatus.CREATED)
   @Post('register')
   async register(
-    @Body() body: { email: string; password: string; name: string },
+    @Body(new ZodValidationPipe(registerSchema)) body: TypeRegisterSchema,
   ) {
     const user = await this.authService.findUserByEmail(body.email);
     if (user) {
