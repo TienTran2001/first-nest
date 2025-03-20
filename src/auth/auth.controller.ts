@@ -10,7 +10,9 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { LoginDto, LoginReturnDto } from './auth.dto';
+import { loginResponseSchema } from 'src/auth/schemas/login-response';
+import { loginSchema, TypeLoginSchema } from 'src/auth/schemas/login.schema';
+import { ZodValidationPipe } from 'src/common/pipes/zod-validation.pipe';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 
@@ -38,12 +40,18 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() body: LoginDto) {
+  async login(@Body(new ZodValidationPipe(loginSchema)) body: TypeLoginSchema) {
     const { user, refreshToken, accessToken } = await this.authService.login(
       body.email,
       body.password,
     );
-    return new LoginReturnDto(user, refreshToken, accessToken);
+
+    return loginResponseSchema.parse({
+      message: 'Login successful',
+      user,
+      refreshToken,
+      accessToken,
+    });
   }
 
   @UseGuards(AuthGuard)
