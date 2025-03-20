@@ -6,11 +6,13 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './create-user.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('users') //decorator
 export class UsersController {
@@ -39,6 +41,7 @@ export class UsersController {
     };
   }
 
+  @UseGuards(AuthGuard)
   @Get()
   getUsers() {
     return this.usersService.getUsers();

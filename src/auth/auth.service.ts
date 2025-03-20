@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -58,20 +58,22 @@ export class AuthService {
    * @param password
    * @return user
    */
-  async login(email: string, password: string) {
+  async login(email: string, pass: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
 
-    if (!user || !(await this.comparePassword(password, user.password))) {
+    if (!user || !(await this.comparePassword(pass, user.password))) {
       throw new UnauthorizedException('Email or password is incorrect');
     }
 
     const tokens = this.generateTokens(user.id, user.email);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
     return {
-      user,
+      user: result,
       ...tokens,
     };
   }
@@ -83,7 +85,7 @@ export class AuthService {
    * @return token and refresh token
    */
   private generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
+    const payload = { id: userId, email };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
