@@ -1,12 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { PrismaService } from '../prisma/prisma.service';
+import { AuthRepository } from 'src/auth/auth.repository';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    private authRepository: AuthRepository,
     private jwtService: JwtService,
   ) {}
 
@@ -30,11 +30,11 @@ export class AuthService {
   }
 
   async findUserByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email } });
+    return await this.authRepository.findUserByEmail(email);
   }
 
   async findUserById(id: string) {
-    return await this.prisma.user.findUnique({ where: { id } });
+    return await this.authRepository.findUserById(id);
   }
 
   /**
@@ -47,12 +47,10 @@ export class AuthService {
   async register(email: string, password: string, name: string) {
     const hashedPassword = await this.hashPassword(password);
 
-    return this.prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-      },
+    return this.authRepository.createUser({
+      email,
+      name,
+      password: hashedPassword,
     });
   }
 
@@ -63,16 +61,14 @@ export class AuthService {
    * @return user
    */
   async login(email: string, pass: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await this.authRepository.findUserByEmail(email);
 
     if (!user || !(await this.comparePassword(pass, user.password))) {
       throw new UnauthorizedException('Email or password is incorrect');
     }
 
     const tokens = this.generateTokens(user.id, user.email);
-    await this.saveRefreshToken(user.id, tokens.refreshToken);
+    await this.authRepository.saveRefreshToken(user.id, tokens.refreshToken);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
@@ -102,18 +98,5 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
-  }
-
-  /**
-   * @todo save refresh token
-   * @param userId
-   * @param refreshToken
-   */
-  private async saveRefreshToken(userId: string, refreshToken: string) {
-    const hashedToken = await this.hashPassword(refreshToken);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: hashedToken },
-    });
   }
 }
