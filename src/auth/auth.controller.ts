@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Post,
   Request,
   UseGuards,
@@ -47,8 +48,20 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Get('profile')
-  getProfile(@Request() req: RequestWithUser) {
-    const user = req.user;
-    return user;
+  async getProfile(@Request() req: RequestWithUser) {
+    const { id } = req.user;
+
+    const user = await this.authService.findUserById(id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, role, ...result } = user;
+    return {
+      message: 'Profile fetched successfully',
+      data: result,
+    };
   }
 }

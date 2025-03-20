@@ -33,6 +33,10 @@ export class AuthService {
     return await this.prisma.user.findUnique({ where: { email } });
   }
 
+  async findUserById(id: string) {
+    return await this.prisma.user.findUnique({ where: { id } });
+  }
+
   /**
    * @todo register new account
    * @param email
