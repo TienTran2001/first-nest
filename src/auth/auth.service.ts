@@ -1,7 +1,13 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import type { Cache } from 'cache-manager';
 import { randomInt } from 'crypto';
 import { AuthRepository } from 'src/auth/auth.repository';
 import { TypeRegisterSchema } from 'src/auth/schemas/register.schema';
@@ -41,6 +47,16 @@ export class AuthService {
     return await this.authRepository.findUserById(id);
   }
 
+  async requestOtp(email: string) {
+    const user = await this.findUserByEmail(email);
+    if (user) {
+      throw new BadRequestException('User already exists');
+    }
+    const otp = randomInt(100000, 999999).toString();
+    await this.cacheManager.set(`otp:${email}`, otp, 60000);
+    console.log(`OTP for ${email}: ${otp}`);
+  }
+
   /**
    * @todo register new account
    * @param email
@@ -51,7 +67,13 @@ export class AuthService {
   async register(dto: TypeRegisterSchema) {
     const { email, password, name, otp } = dto;
 
-    const cachedOtp = await this.cacheManager.keys(`otp:${email}`);
+    const cachedOtp = await this.cacheManager.get(`otp:${email}`);
+
+    if (!cachedOtp || cachedOtp !== otp) {
+      throw new BadRequestException('OTP is incorrect or expired');
+    }
+
+    await this.cacheManager.del(`otp:${email}`);
 
     const hashedPassword = await this.hashPassword(password);
 
@@ -60,12 +82,6 @@ export class AuthService {
       name,
       password: hashedPassword,
     });
-  }
-
-  async requestOtp(email: string) {
-    const otp = randomInt(100000, 999999).toString();
-    await this.cacheManager.set(`otp:${email}`, otp, { ttl: 300 });
-    console.log(`OTP cho ${email}: ${otp}`);
   }
 
   /**

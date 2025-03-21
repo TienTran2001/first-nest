@@ -54,7 +54,12 @@ export class AuthController {
     if (user) {
       throw new BadRequestException('User already exists');
     }
-    return this.authService.register(body.email, body.password, body.name);
+    return this.authService.register({
+      email: body.email,
+      password: body.password,
+      name: body.name,
+      otp: body.otp,
+    });
   }
 
   @HttpCode(HttpStatus.OK)
