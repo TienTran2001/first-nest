@@ -11,6 +11,7 @@ import type { Cache } from 'cache-manager';
 import { randomInt } from 'crypto';
 import { AuthRepository } from 'src/auth/auth.repository';
 import { TypeRegisterSchema } from 'src/auth/schemas/register.schema';
+import { MailService } from 'src/email/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private authRepository: AuthRepository,
     private jwtService: JwtService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private mailService: MailService,
   ) {}
 
   /**
@@ -54,6 +56,7 @@ export class AuthService {
     }
     const otp = randomInt(100000, 999999).toString();
     await this.cacheManager.set(`otp:${email}`, otp, 60000);
+    await this.mailService.sendOtp(email, otp);
     console.log(`OTP for ${email}: ${otp}`);
   }
 
