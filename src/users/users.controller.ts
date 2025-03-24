@@ -6,13 +6,13 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { Role } from '@prisma/client';
+import { Roles } from 'src/auth/roles.decorator';
 import { CreateUserDto } from './create-user.dto';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { UsersService } from './users.service';
 
 @Controller('users') //decorator
 export class UsersController {
@@ -41,9 +41,11 @@ export class UsersController {
     };
   }
 
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   @Get()
+  @Roles(Role.ADMIN)
   getUsers() {
+    console.log('Role: ', Role.ADMIN);
     return this.usersService.getUsers();
   }
 }

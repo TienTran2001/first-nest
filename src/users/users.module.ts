@@ -1,6 +1,8 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { RolesGuard } from 'src/auth/roles.guard';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -14,7 +16,13 @@ import { UsersService } from './users.service';
     }),
     CacheModule.register(),
   ],
-  providers: [UsersService],
+  providers: [
+    UsersService,
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
   controllers: [UsersController],
 })
 export class UsersModule {}

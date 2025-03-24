@@ -1,8 +1,10 @@
 import { MailerModule } from '@nestjs-modules/mailer';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthRepository } from 'src/auth/auth.repository';
+import { RolesGuard } from 'src/auth/roles.guard';
 import { MailService } from 'src/email/mail.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { AuthController } from './auth.controller';
@@ -37,6 +39,14 @@ import { AuthService } from './auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, MailService],
+  providers: [
+    AuthService,
+    AuthRepository,
+    MailService,
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AuthModule {}

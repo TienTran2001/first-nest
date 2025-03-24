@@ -18,7 +18,7 @@ model User {
   email        String   @unique
   password     String
   name         String
-  role         Role     @default(USER)
+  role         Role[]   @default([USER])
   refreshToken String?  // save hashed refresh token
 
   createdAt    DateTime @default(now())
