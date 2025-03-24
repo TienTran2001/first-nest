@@ -7,14 +7,14 @@ export class MailService {
 
   async sendOtp(email: string, otp: string) {
     try {
-      console.log({ email, otp });
+      const template = `
+      <h1>Your OTP Code</h1>
+      <p>Your OTP code is <b>${otp}</b></p>
+      `;
       await this.mailerService.sendMail({
         to: email,
         subject: 'Your OTP Code',
-        template: './otp',
-        context: {
-          otp,
-        },
+        html: template,
       });
       console.log('OTP sent successfully!');
     } catch (error) {

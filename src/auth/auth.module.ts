@@ -1,9 +1,7 @@
 import { MailerModule } from '@nestjs-modules/mailer';
-import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { join } from 'path';
 import { AuthRepository } from 'src/auth/auth.repository';
 import { MailService } from 'src/email/mail.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
@@ -29,16 +27,12 @@ import { AuthService } from './auth.service';
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASSWORD,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       },
       defaults: {
         from: '"No Reply" <noreply@example.com>',
-      },
-      template: {
-        dir: join(__dirname, 'templates'),
-        adapter: new PugAdapter(),
-        options: {
-          strict: true,
-        },
       },
     }),
   ],
