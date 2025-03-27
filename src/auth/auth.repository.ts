@@ -14,6 +14,12 @@ export class AuthRepository {
     return await this.prisma.user.findUnique({ where: { id } });
   }
 
+  async findUserByRefreshToken(userId: string, refreshToken: string) {
+    return await this.prisma.user.findUnique({
+      where: { id: userId, refreshToken },
+    });
+  }
+
   /**
    * @todo register new account
    * @param data

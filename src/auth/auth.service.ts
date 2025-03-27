@@ -6,12 +6,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import type { Cache } from 'cache-manager';
 import { randomInt } from 'crypto';
 import { AuthRepository } from 'src/auth/auth.repository';
 import { TypeRegisterSchema } from 'src/auth/schemas/register.schema';
 import { MailService } from 'src/email/mail.service';
+
+export interface IPayload {
+  id: string;
+  email: string;
+  roles: Role[];
+}
 
 @Injectable()
 export class AuthService {
@@ -100,7 +107,7 @@ export class AuthService {
       throw new UnauthorizedException('Email or password is incorrect');
     }
 
-    const tokens = this.generateTokens(user.id, user.email);
+    const tokens = this.generateTokens(user.id, user.email, user.role);
     await this.authRepository.saveRefreshToken(user.id, tokens.refreshToken);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -117,8 +124,8 @@ export class AuthService {
    * @param email
    * @return token and refresh token
    */
-  private generateTokens(userId: string, email: string) {
-    const payload = { id: userId, email };
+  private generateTokens(userId: string, email: string, roles: Role[]) {
+    const payload = { id: userId, email, roles };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
@@ -131,5 +138,38 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * @todo refresh access token and generate new tokens: access token and refresh token
+   * @param refreshToken
+   * @return new access token
+   */
+  async refreshAccessToken(refreshToken: string) {
+    const payload = await this.jwtService.verifyAsync<IPayload>(refreshToken, {
+      secret: process.env.JWT_SECRET,
+    });
+
+    const existingUser = await this.authRepository.findUserByRefreshToken(
+      payload.id,
+      refreshToken,
+    );
+
+    if (!existingUser) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokens = this.generateTokens(
+      payload.id,
+      payload.email,
+      payload.roles,
+    );
+
+    // save refresh token to db
+    await this.authRepository.saveRefreshToken(payload.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+    };
   }
 }

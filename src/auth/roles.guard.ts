@@ -1,23 +1,49 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
-import { ROLES_KEY } from 'src/auth/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private jwtService: JwtService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
       context.getHandler(),
       context.getClass(),
     ]);
+
     if (!requiredRoles) {
       return true;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { user } = context.switchToHttp().getRequest();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    return requiredRoles.some((role) => user.roles?.includes(role));
+
+    const request: Request & { headers: { authorization: string } } = context
+      .switchToHttp()
+      .getRequest();
+
+    const token = request.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      throw new ForbiddenException('No token provided');
+    }
+
+    try {
+      const payload: { id: string; email: string; roles: Role[] } =
+        await this.jwtService.verify(token);
+      const userRoles = payload.roles;
+
+      return requiredRoles.some((role) => userRoles.includes(role));
+    } catch (error) {
+      console.log('error: ', error);
+      throw new ForbiddenException('Access denied');
+    }
   }
 }
