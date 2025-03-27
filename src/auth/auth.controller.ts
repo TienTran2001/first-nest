@@ -108,4 +108,16 @@ export class AuthController {
       tokens,
     };
   }
+
+  @UseGuards(AuthGuard)
+  @Post('logout')
+  async logout(@Request() req: RequestWithUser) {
+    const { id } = req.user;
+
+    await this.authService.logout(id);
+
+    return {
+      message: 'Logout successful',
+    };
+  }
 }

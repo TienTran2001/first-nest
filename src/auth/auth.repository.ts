@@ -20,6 +20,13 @@ export class AuthRepository {
     });
   }
 
+  async removeRefreshToken(userId: string) {
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+  }
+
   /**
    * @todo register new account
    * @param data

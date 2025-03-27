@@ -172,4 +172,11 @@ export class AuthService {
       ...tokens,
     };
   }
+
+  async logout(userId: string) {
+    const existingUser = await this.authRepository.removeRefreshToken(userId);
+    if (!existingUser) {
+      throw new UnauthorizedException('User not found');
+    }
+  }
 }
