@@ -10,6 +10,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { loginResponseSchema } from 'src/auth/schemas/login-response';
 import { loginSchema, TypeLoginSchema } from 'src/auth/schemas/login.schema';
 import {
@@ -26,6 +27,7 @@ interface RequestWithUser extends Request {
   user: {
     id: string;
     email: string;
+    roles: Role[];
   };
 }
 
