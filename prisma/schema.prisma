@@ -29,3 +29,16 @@ enum Role {
   USER
   ADMIN
 }
+
+model Product {
+  id            String @id @default(uuid())
+  name          String
+  description   String?
+  price         Decimal @db.Decimal(10, 2)
+  imageUrl      String?
+  quantity      Int
+  isActive      Boolean @default(true)
+  category      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
