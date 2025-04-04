@@ -30,12 +30,12 @@ export class ProductController {
   constructor(private productService: ProductsService) {}
 
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
   @Post()
   @Roles(Role.ADMIN)
   async create(
     @Body(new ZodValidationPipe(createProductSchema))
     body: TypeCreateProductSchema,
+    @Param('imageId') imageId: string,
   ) {
     const productExisting = await this.productService.findOne(
       'name',
@@ -48,7 +48,7 @@ export class ProductController {
         data: null,
       };
     }
-    const res = await this.productService.create(body);
+    const res = await this.productService.create(body, imageId);
     return {
       message: 'Product created successfully',
       data: res,

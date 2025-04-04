@@ -1,5 +1,7 @@
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ProductsModule } from 'src/products/products.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -14,6 +16,10 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     ProductsModule,
     MulterModule.register(),
+    CacheModule.register({
+      ttl: 86400000, // 24 hours
+    }),
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
