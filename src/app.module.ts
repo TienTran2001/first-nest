@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
 import { ProductsModule } from 'src/products/products.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -7,7 +8,13 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, ProductsModule],
+  imports: [
+    PrismaModule,
+    UsersModule,
+    AuthModule,
+    ProductsModule,
+    MulterModule.register(),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
