@@ -1,5 +1,6 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import type { Cache } from 'cache-manager';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
@@ -18,8 +19,6 @@ export class ProductsService {
   async create(createProductDto: TypeCreateProductSchema, imageId: string) {
     const cacheImage = await this.cacheManager.get(`image:${imageId}`);
 
-    console.log('cache nè: ', cacheImage);
-
     if (cacheImage) {
       await this.cacheManager.del(`image:${imageId}`);
     } else {
@@ -33,39 +32,53 @@ export class ProductsService {
     if (!file) {
       return null;
     }
+
     const image = await this.cloudinaryService.uploadImage(file);
     await this.cacheManager.set(
       `image:${image.publicId}`,
-      image.publicId,
-      300000,
+      {
+        value: image.publicId,
+        expires: Date.now() + 300000,
+      },
+      0,
     );
     return image;
   }
+
   async cleanupExpiredImages() {
-    const cachedImages = await this.cacheManager.get<string[]>('*');
+    const cacheStore = this.cacheManager.stores[0].opts.store as Map<
+      string,
+      string
+    >;
+    type CacheValue = {
+      value: string;
+      expires: number;
+    };
+    const result: CacheValue[] = Array.from(cacheStore.entries())
+      .filter(([key]) => key.startsWith('keyv:image:'))
+      .map(([, valueString]) => {
+        const valueObj = JSON.parse(valueString) as { value: CacheValue };
+        return valueObj.value;
+      });
 
-    for (const key of cachedImages || []) {
-      const imageIdMatch = key.match(/^image:(.*)$/);
-      if (imageIdMatch) {
-        const imageId = imageIdMatch[1];
-        const cachedImage = await this.cacheManager.get(key);
+    console.log(result);
+    const now = Date.now();
 
-        if (!cachedImage) {
-          await this.cacheManager.del(key);
-          await this.cloudinaryService.deleteImage(imageId);
-          console.log(`Deleted expired image: ${imageId}`);
-        }
+    for (const image of result) {
+      if (now > image.expires) {
+        await this.cloudinaryService.deleteImage(image.value);
+        await this.cacheManager.del(`image:${image.value}`);
+        console.log(`🗑️ Deleted expired temp image: ${image.value}`);
       }
     }
   }
 
-  // @Cron('0 */2 * * * *')
-  // async handleExpiredImages() {
-  //   console.log(
-  //     'hihi ------------------------------------------------------------------- clean nè các e',
-  //   );
-  //   await this.cleanupExpiredImages();
-  // }
+  @Cron('0 */1 * * * *')
+  async handleExpiredImages() {
+    console.log('Start cleaning expired images in cloudinary');
+    await this.cleanupExpiredImages();
+    console.log('Expired images cleaned');
+  }
 
   async findAll(paginationDto: PaginationDto) {
     const { data, total } = await this.productRepository.findAll(paginationDto);

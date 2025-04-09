@@ -35,12 +35,14 @@ export class ProductController {
   async create(
     @Body(new ZodValidationPipe(createProductSchema))
     body: TypeCreateProductSchema,
-    @Param('imageId') imageId: string,
+    @Query('imageId') imageId: string,
   ) {
     const productExisting = await this.productService.findOne(
       'name',
       body.name,
     );
+
+    console.log('imageId nè: ', imageId);
 
     if (productExisting) {
       return {
