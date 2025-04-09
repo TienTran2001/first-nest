@@ -100,6 +100,24 @@ export class ProductsService {
   }
 
   async update(id: string, data: Prisma.ProductUpdateInput) {
-    return this.productRepository.update(id, data);
+    const product = await this.productRepository.findOne('id', id);
+
+    if (!product) return null;
+
+    const isSameImage = product.imageUrl === data.imageUrl;
+    const oldImageUrl = product.imageUrl;
+
+    const updateProduct = await this.productRepository.update(id, data);
+
+    if (!isSameImage && oldImageUrl) {
+      const parts = oldImageUrl.split('/upload/')[1].split('/');
+      parts.shift();
+      const publicId = parts.join('/').split('.')[0];
+      if (publicId) {
+        await this.cloudinaryService.deleteImage(publicId);
+      }
+    }
+
+    return updateProduct;
   }
 }
