@@ -42,8 +42,6 @@ export class ProductController {
       body.name,
     );
 
-    console.log('imageId nè: ', imageId);
-
     if (productExisting) {
       return {
         message: 'Product already exists',

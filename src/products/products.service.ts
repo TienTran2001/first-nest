@@ -61,7 +61,6 @@ export class ProductsService {
         return valueObj.value;
       });
 
-    console.log(result);
     const now = Date.now();
 
     for (const image of result) {
