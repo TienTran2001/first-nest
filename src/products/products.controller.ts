@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   FileTypeValidator,
   Get,
   HttpCode,
@@ -118,6 +119,22 @@ export class ProductController {
     const res = await this.productService.update(id, body);
     return {
       message: 'Product updated successfully',
+      data: res,
+    };
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  async delete(@Param('id') id: string) {
+    const res = await this.productService.delete(id);
+    if (!res) {
+      return {
+        message: 'Product not found',
+        data: null,
+      };
+    }
+    return {
+      message: 'Product deleted successfully',
       data: res,
     };
   }

@@ -99,6 +99,13 @@ export class ProductsService {
     return this.productRepository.findOne(field, value);
   }
 
+  // Get the publicId from the old image URL to delete from cloudinary
+  private partsToPublicId(imageUrl: string) {
+    const parts = imageUrl.split('/upload/')[1].split('/');
+    parts.shift();
+    return parts.join('/').split('.')[0];
+  }
+
   async update(id: string, data: Prisma.ProductUpdateInput) {
     const product = await this.productRepository.findOne('id', id);
 
@@ -110,14 +117,30 @@ export class ProductsService {
     const updateProduct = await this.productRepository.update(id, data);
 
     if (!isSameImage && oldImageUrl) {
-      const parts = oldImageUrl.split('/upload/')[1].split('/');
-      parts.shift();
-      const publicId = parts.join('/').split('.')[0];
+      const publicId = this.partsToPublicId(oldImageUrl);
+
       if (publicId) {
         await this.cloudinaryService.deleteImage(publicId);
       }
     }
 
     return updateProduct;
+  }
+
+  async delete(id: string) {
+    const product = await this.productRepository.findOne('id', id);
+
+    if (!product) return null;
+
+    const result = await this.productRepository.remove(id);
+
+    if (product.imageUrl) {
+      const publicId = this.partsToPublicId(product.imageUrl);
+      if (publicId) {
+        await this.cloudinaryService.deleteImage(publicId);
+      }
+    }
+
+    return result;
   }
 }
